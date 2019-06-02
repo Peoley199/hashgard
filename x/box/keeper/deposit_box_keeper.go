@@ -168,6 +168,7 @@ func (keeper Keeper) fetchDepositFromDepositBox(ctx sdk.Context, box *types.BoxI
 		keeper.setAddressDeposit(ctx, box.BoxId, sender, boxDeposit)
 	}
 	box.Deposit.Share = box.Deposit.Share.Sub(deposit.Amount.Quo(box.Deposit.Price))
+	box.Deposit.TotalDeposit = box.Deposit.TotalDeposit.Sub(deposit.Amount)
 	keeper.setBox(ctx, box)
 	return nil
 }
