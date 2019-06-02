@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/hashgard/hashgard/x/box/params"
+
 	"github.com/cosmos/cosmos-sdk/client/utils"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/hashgard/hashgard/x/box/client/queriers"
+	boxqueriers "github.com/hashgard/hashgard/x/box/client/queriers"
 	clientutils "github.com/hashgard/hashgard/x/box/client/utils"
 	"github.com/hashgard/hashgard/x/box/errors"
 	"github.com/hashgard/hashgard/x/box/msgs"
@@ -166,6 +169,26 @@ func deposit(cdc *codec.Codec, args []string, operation string) error {
 
 	switch operation {
 	case types.DepositTo:
+		boxQueryParams := params.BoxQueryDepositListParams{
+			BoxId: boxInfo.GetBoxId(),
+		}
+		// Query the box
+		res, err := boxqueriers.QueryDepositList(boxQueryParams, cdc, cliCtx)
+		if err != nil {
+			return err
+		}
+		var boxs types.DepositBoxDepositInterestList
+		cdc.MustUnmarshalJSON(res, &boxs)
+		totalDeposit := sdk.ZeroInt()
+		for i, box := range boxs {
+			if box.Amount.IsZero() {
+				continue
+			}
+			totalDeposit = totalDeposit.Add(boxs[i].Amount)
+		}
+		if amount.Add(totalDeposit).GT(boxInfo.GetTotalAmount().Token.Amount) {
+			return errors.Errorf(errors.ErrNotEnoughAmount())
+		}
 		if err = checkAmountByDepositTo(amount, boxInfo); err != nil {
 			return err
 		}
@@ -197,9 +220,9 @@ func checkAmountByDepositTo(amount sdk.Int, boxInfo types.Box) error {
 		if !amount.Mod(boxInfo.GetDeposit().Price).IsZero() {
 			return errors.ErrAmountNotValid(amount.String())
 		}
-		if amount.Add(boxInfo.GetDeposit().TotalDeposit).GT(boxInfo.GetTotalAmount().Token.Amount) {
-			return errors.Errorf(errors.ErrNotEnoughAmount())
-		}
+		//if amount.Add(boxInfo.GetDeposit().TotalDeposit).GT(boxInfo.GetTotalAmount().Token.Amount) {
+		//return errors.Errorf(errors.ErrNotEnoughAmount())
+		//}
 	case types.Future:
 		total := sdk.ZeroInt()
 		if boxInfo.GetFuture().Deposits != nil {
