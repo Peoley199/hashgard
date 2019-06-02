@@ -140,7 +140,7 @@ func (keeper Keeper) depositToDepositBox(ctx sdk.Context, box *types.BoxInfo, se
 	}
 	box.Deposit.TotalDeposit = box.Deposit.TotalDeposit.Add(deposit.Amount)
 	if box.Deposit.TotalDeposit.GT(box.TotalAmount.Token.Amount) {
-		//return errors.ErrAmountNotValid(deposit.Denom)
+		return errors.ErrAmountNotValid(deposit.Denom)
 	}
 	if err := keeper.SendDepositedCoin(ctx, sender, sdk.Coins{deposit}, box.BoxId); err != nil {
 		return err
@@ -168,7 +168,7 @@ func (keeper Keeper) fetchDepositFromDepositBox(ctx sdk.Context, box *types.BoxI
 		keeper.setAddressDeposit(ctx, box.BoxId, sender, boxDeposit)
 	}
 	box.Deposit.Share = box.Deposit.Share.Sub(deposit.Amount.Quo(box.Deposit.Price))
-	//box.Deposit.TotalDeposit = box.Deposit.TotalDeposit.Sub(deposit.Amount)
+	box.Deposit.TotalDeposit = box.Deposit.TotalDeposit.Sub(deposit.Amount)
 	keeper.setBox(ctx, box)
 	return nil
 }
